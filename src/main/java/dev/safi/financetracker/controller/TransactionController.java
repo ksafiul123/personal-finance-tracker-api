@@ -1,5 +1,6 @@
 package dev.safi.financetracker.controller;
 
+import dev.safi.financetracker.dto.ApiResponse;
 import dev.safi.financetracker.model.Transaction;
 import dev.safi.financetracker.service.TransactionService;
 import org.springframework.http.ResponseEntity;
@@ -18,33 +19,51 @@ public class TransactionController {
     }
 
     @GetMapping
-    public List<Transaction> getAllTransactions(@RequestParam(required = false) String type) {
+    public ApiResponse<List<Transaction>> getAllTransactions(@RequestParam(required = false) String type) {
 
         if(type != null) {
-            return service.getTransactionsByType(type);
+            return new ApiResponse<>(
+                    "success",
+                    "Transactions fetched successfully",
+                    service.getTransactionsByType(type)
+        );
         }
 
-        return service.getAllTransactions();
+        return new ApiResponse<>(
+                "success",
+                "Transactions fetched successfully",
+                service.getAllTransactions()
+        );
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Transaction> getTransactionById(@PathVariable int id) {
+    public ResponseEntity<ApiResponse<Transaction>> getTransactionById(@PathVariable int id) {
         return service.getTransactionById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .map(tx -> ResponseEntity.ok(
+                        new ApiResponse<>("success", "Transaction found", tx)
+                ))
+                .orElse(ResponseEntity.status(404).body(
+                        new ApiResponse<>("error", "Transaction not found", null)
+                ));
     }
 
     @PostMapping
-    public Transaction addTransaction(@RequestBody Transaction transaction) {
-        return service.addTransaction(transaction);
+    public ApiResponse<Transaction> addTransaction(@RequestBody Transaction transaction) {
+        return new ApiResponse<>(
+                "success",
+                "Transaction added successfully",
+                service.addTransaction(transaction)
+        );
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteTransaction(@PathVariable int id) {
+    public ApiResponse<String> deleteTransaction(@PathVariable int id) {
+
         boolean deleted = service.deleteTransaction(id);
+
         if(deleted) {
-            return ResponseEntity.ok("Transaction deleted successfully");
+            return new ApiResponse<>("success", "Transaction deleted", null);
         }
-        return ResponseEntity.notFound().build();
+        return new ApiResponse<>("error", "Transaction not found", null);
     }
 }
